@@ -9,10 +9,13 @@ function ServicesBoard:CreateMainFrame()
 	f:RegisterForDrag("LeftButton")
 	f:Hide()
 
-	f.PortraitContainer.portrait:SetTexture("Interface\\Icons\\Trade_Engineering")
+	-- Use a more modern profession-style icon
+	f.PortraitContainer.portrait:SetTexture("Interface\\Icons\\ui_profession_engineering")
 	f.TitleContainer.TitleText:SetText("Services Board")
 	f:SetScript("OnDragStart", f.StartMoving)
 	f:SetScript("OnDragStop", f.StopMovingOrSizing)
+
+	-- Keep the original PortraitFrameTemplate background - don't modify it to maintain proper opacity
 
 	-- Esc key closes the frame
 	f:SetScript("OnShow", function(self)

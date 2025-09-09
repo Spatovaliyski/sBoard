@@ -48,20 +48,38 @@ function ServicesBoard:RefreshUI()
 			end
 		end
 
-		-- Message box (starts below the header)
-		local messageBox = CreateFrame("Frame", nil, entry, "BackdropTemplate")
+		-- Modern message box using profession-style background
+		local messageBox = CreateFrame("Frame", nil, entry)
 		messageBox:SetPoint("TOPLEFT", entry, "TOPLEFT", 0, -18)
 		messageBox:SetPoint("TOPRIGHT", entry, "TOPRIGHT", 0, -18)
-		messageBox:SetBackdrop({
-			bgFile = "Interface\\ChatFrame\\ChatFrameBackground",
-			edgeFile = "Interface\\Buttons\\WHITE8x8",
-			tile = true,
-			tileSize = 16,
-			edgeSize = 1,
-			insets = { left = 1, right = 1, top = 1, bottom = 1 },
-		})
-		messageBox:SetBackdropColor(0.0, 0.0, 0.0, 0.25)
-		messageBox:SetBackdropBorderColor(0.4, 0.4, 0.4, 0.5)
+
+		-- Create modern background using the same texture as crafting orders rows
+		local bgTexture = messageBox:CreateTexture(nil, "BACKGROUND")
+		if not self:SetTextureAtlas(bgTexture, "Professions-background-summarylist", { 0.1, 0.1, 0.1, 0.8 }) then
+			-- Additional fallback - try auction house background
+			self:SetTextureAtlas(bgTexture, "auctionhouse-background-index", { 0.1, 0.1, 0.1, 0.8 })
+		end
+		bgTexture:SetAllPoints(messageBox)
+		if bgTexture:GetAtlas() then
+			bgTexture:SetVertexColor(0.1, 0.1, 0.1, 0.8) -- Slightly darker than default
+		end
+
+		-- Add subtle border using professions style
+		local borderFrame = CreateFrame("Frame", nil, messageBox, "NineSlicePanelTemplate")
+		borderFrame:SetAllPoints(messageBox)
+		local nineSlice = borderFrame.NineSlice or borderFrame
+		if nineSlice.SetupTextureKit then
+			nineSlice:SetupTextureKit("Professions")
+		else
+			-- Fallback - create a subtle border manually
+			local border = messageBox:CreateTexture(nil, "BORDER")
+			border:SetAllPoints(messageBox)
+			border:SetColorTexture(0.3, 0.3, 0.3, 0.4)
+			local inset = messageBox:CreateTexture(nil, "ARTWORK")
+			inset:SetPoint("TOPLEFT", border, "TOPLEFT", 1, -1)
+			inset:SetPoint("BOTTOMRIGHT", border, "BOTTOMRIGHT", -1, 1)
+			inset:SetColorTexture(0.0, 0.0, 0.0, 0.6)
+		end
 
 		local messageText = CreateFrame("SimpleHTML", nil, messageBox)
 		messageText:SetFrameLevel(messageBox:GetFrameLevel() + 1)
@@ -95,9 +113,11 @@ function ServicesBoard:RefreshUI()
 		messageBox:SetHeight(messageBoxHeight)
 		messageText:SetHeight(textHeight)
 
+		-- Modern highlight texture using the same as Crafting Orders
 		local highlight = messageBox:CreateTexture(nil, "HIGHLIGHT")
-		highlight:SetAllPoints()
-		highlight:SetColorTexture(1, 1, 1, 0.1)
+		self:SetTextureAtlas(highlight, "auctionhouse-ui-row-highlight", { 1, 1, 1, 0.15 })
+		highlight:SetAllPoints(messageBox)
+		highlight:SetBlendMode("ADD")
 		highlight:Hide()
 
 		entry:SetScript("OnEnter", function(self)
