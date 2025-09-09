@@ -62,8 +62,8 @@ function ServicesBoard:CreateScrollBox()
 	if scrollBar then
 		-- Position the scrollbar nicely
 		scrollBar:ClearAllPoints()
-		scrollBar:SetPoint("TOPLEFT", scrollFrame, "TOPRIGHT", 6, -16)
-		scrollBar:SetPoint("BOTTOMLEFT", scrollFrame, "BOTTOMRIGHT", 6, 16)
+		scrollBar:SetPoint("TOPLEFT", scrollFrame, "TOPRIGHT", 6, -8)
+		scrollBar:SetPoint("BOTTOMLEFT", scrollFrame, "BOTTOMRIGHT", 6, 8)
 		scrollBar:SetWidth(12)
 
 		-- Add the methods that ScrollUtil needs
@@ -188,9 +188,35 @@ function ServicesBoard:GetClassColor(name)
 	return 0.3, 0.6, 1
 end
 
+function ServicesBoard:GetChannelName(channelNumber)
+	-- Convert channel number to readable name
+	if not channelNumber or channelNumber == "" then
+		return nil
+	end
+
+	local channelNum = tonumber(channelNumber)
+	if not channelNum then
+		return channelNumber -- Return as-is if not a number
+	end
+
+	-- Common channel mappings (may vary by server)
+	local channelNames = {
+		[1] = "General",
+		[2] = "Trade",
+		[3] = "LocalDefense",
+		[4] = "LookingForGroup",
+		[5] = "WorldDefense",
+		[42] = "Services", -- Common services channel
+		[50] = "Services", -- Alternative services channel
+	}
+
+	return channelNames[channelNum] or ("Ch" .. channelNum)
+end
+
 function ServicesBoard:MakeLinksClickable(text)
-	-- Make achievement links clickable
-	return text:gsub("(|c%x%x%x%x%x%x%x%x|H(achievement:[^|]+)|h%[[^%]]+%]|h|r)", "|cff00ff00|H%2|h[Achievement]|h|r")
+	-- Keep original links intact - WoW will handle the clicking
+	-- This function now just ensures links are properly formatted but doesn't modify them
+	return text
 end
 
 function ServicesBoard:RefreshUI()
@@ -216,9 +242,23 @@ function ServicesBoard:RefreshUI()
 		entry:SetHeight(entryHeight)
 		entry:EnableMouse(true)
 
+		-- Create textured background box
+		local background = entry:CreateTexture(nil, "BACKGROUND")
+		background:SetAllPoints()
+		background:SetColorTexture(1, 1, 1, 0.05) -- White background
+
+		-- Create border
+		local border = CreateFrame("Frame", nil, entry, "BackdropTemplate")
+		border:SetAllPoints()
+		border:SetBackdrop({
+			edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+			edgeSize = 8,
+		})
+		border:SetBackdropBorderColor(0.4, 0.4, 0.5, 0.9)
+
 		-- Player name
 		local playerName = entry:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-		playerName:SetPoint("TOPLEFT", entry, "TOPLEFT", 0, -8)
+		playerName:SetPoint("TOPLEFT", entry, "TOPLEFT", 8, -8)
 		local shortName = msg.author:match("^([^%-]+)") or msg.author
 		local r, g, b = self:GetClassColor(msg.author)
 		playerName:SetText(shortName)
@@ -226,40 +266,57 @@ function ServicesBoard:RefreshUI()
 
 		-- Timestamp
 		local timestamp = entry:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-		timestamp:SetPoint("TOPRIGHT", entry, "TOPRIGHT", 0, -8)
+		timestamp:SetPoint("TOPRIGHT", entry, "TOPRIGHT", -8, -8)
 		timestamp:SetText(date("%H:%M", msg.time))
 		timestamp:SetTextColor(0.7, 0.7, 0.7)
 
 		-- Channel
 		if msg.channel and msg.channel ~= "" then
-			local channel = entry:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-			channel:SetPoint("TOPLEFT", playerName, "TOPRIGHT", 5, 0)
-			channel:SetText("(" .. msg.channel .. ")")
-			channel:SetTextColor(0.8, 0.8, 0.8)
+			local channelName = self:GetChannelName(msg.channel)
+			if channelName then
+				local channel = entry:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+				channel:SetPoint("TOPLEFT", playerName, "TOPRIGHT", 5, -2) -- Push down by 2 pixels
+				channel:SetText("(" .. channelName .. ")")
+				channel:SetTextColor(0.8, 0.8, 0.8)
+			end
 		end
 
-		-- Message text
-		local messageText = entry:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+		-- Use SimpleHTML for message text to support hyperlinks
+		local messageText = CreateFrame("SimpleHTML", nil, entry)
 		messageText:SetPoint("TOPLEFT", playerName, "BOTTOMLEFT", 0, -4)
-		messageText:SetPoint("TOPRIGHT", timestamp, "BOTTOMRIGHT", 0, -4)
-		messageText:SetJustifyH("LEFT")
-		messageText:SetWordWrap(true)
+		messageText:SetPoint("TOPRIGHT", timestamp, "BOTTOMRIGHT", -8, -4) -- Add right padding
+		messageText:SetHeight(1) -- Will be adjusted based on content
+
+		-- Set width constraint to prevent overflow
+		local availableWidth = entry:GetWidth() - 16 -- Account for padding
+		messageText:SetWidth(availableWidth)
+
+		-- Set up hyperlink handling
+		messageText:SetScript("OnHyperlinkClick", function(self, linkData, link, button)
+			SetItemRef(linkData, link, button)
+		end)
+		messageText:SetScript("OnHyperlinkEnter", function(self, linkData, link)
+			GameTooltip:SetOwner(self, "ANCHOR_CURSOR")
+			GameTooltip:SetHyperlink(linkData)
+		end)
+		messageText:SetScript("OnHyperlinkLeave", function(self)
+			GameTooltip:Hide()
+		end)
+
+		-- Set font and text for SimpleHTML
+		messageText:SetFont("p", "Fonts\\FRIZQT__.TTF", 11, "")
+		messageText:SetJustifyH("p", "LEFT")
+		messageText:SetSpacing("p", 3) -- Add line spacing for better readability (11 * 0.3 ≈ 3)
 		messageText:SetText(self:MakeLinksClickable(msg.text))
 
 		-- Adjust entry height based on text
-		local textHeight = messageText:GetStringHeight()
-		local actualHeight = math.max(entryHeight, 30 + textHeight)
+		local textHeight = messageText:GetContentHeight()
+		local actualHeight = math.max(entryHeight, 35 + textHeight)
 		entry:SetHeight(actualHeight)
-
-		-- Divider
-		local divider = entry:CreateTexture(nil, "ARTWORK")
-		divider:SetColorTexture(0.3, 0.3, 0.3, 0.8)
-		divider:SetPoint("BOTTOMLEFT", entry, "BOTTOMLEFT", 0, 2)
-		divider:SetPoint("BOTTOMRIGHT", entry, "BOTTOMRIGHT", 0, 2)
-		divider:SetHeight(1)
+		messageText:SetHeight(textHeight)
 
 		-- Hover effect
-		local highlight = entry:CreateTexture(nil, "BACKGROUND")
+		local highlight = entry:CreateTexture(nil, "HIGHLIGHT")
 		highlight:SetAllPoints()
 		highlight:SetColorTexture(1, 1, 1, 0.1)
 		highlight:Hide()
@@ -271,14 +328,26 @@ function ServicesBoard:RefreshUI()
 			highlight:Hide()
 		end)
 
-		-- Click to whisper
-		entry:SetScript("OnMouseUp", function(self, button)
+		-- Click to whisper (but not when clicking on hyperlinks)
+		local whisperClicked = false
+		entry:SetScript("OnMouseDown", function(self, button)
 			if button == "LeftButton" then
-				ChatFrame_OpenChat("/w " .. msg.author .. " ")
+				whisperClicked = true
 			end
 		end)
+		entry:SetScript("OnMouseUp", function(self, button)
+			if button == "LeftButton" and whisperClicked then
+				ChatFrame_OpenChat("/w " .. msg.author .. " ")
+			end
+			whisperClicked = false
+		end)
 
-		yOffset = yOffset - actualHeight - 5
+		-- Prevent whisper when clicking on hyperlinks in the message text
+		messageText:SetScript("OnMouseDown", function(self, button)
+			whisperClicked = false -- Prevent whisper when clicking on message text
+		end)
+
+		yOffset = yOffset - actualHeight - 8 -- Increased spacing between posts
 	end
 
 	-- Set scroll child height and update scroll range
