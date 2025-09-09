@@ -1,0 +1,6 @@
+## Interface: 110200
+## Title: Services Board
+## Notes: Collects and displays chat messages in a tidy list
+## Author: Limitedby
+## Version: 1.0
+ServicesBoard.lua
