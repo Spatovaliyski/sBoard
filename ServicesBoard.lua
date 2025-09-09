@@ -2,7 +2,7 @@ local ServicesBoard = {}
 
 function ServicesBoard:InitDB()
 	self.db = self.db or ServicesBoardDB or {}
-	self.FRAME_WIDTH = 700
+	self.FRAME_WIDTH = 600
 	self.FRAME_HEIGHT = 500
 	ServicesBoardDB = self.db
 end
@@ -20,6 +20,19 @@ function ServicesBoard:CreateMainFrame()
 	f.TitleContainer.TitleText:SetText("Services Board")
 	f:SetScript("OnDragStart", f.StartMoving)
 	f:SetScript("OnDragStop", f.StopMovingOrSizing)
+
+	-- Esc key closes the frame
+	f:SetScript("OnShow", function(self)
+		table.insert(UISpecialFrames, self:GetName())
+	end)
+	f:SetScript("OnHide", function(self)
+		for i, frameName in ipairs(UISpecialFrames) do
+			if frameName == self:GetName() then
+				table.remove(UISpecialFrames, i)
+				break
+			end
+		end
+	end)
 
 	-- Clear Button
 	local clearBtn = CreateFrame("Button", nil, f, "UIPanelButtonTemplate")
@@ -223,29 +236,19 @@ function ServicesBoard:RefreshUI()
 		entry:SetHeight(entryHeight)
 		entry:EnableMouse(true)
 
-		local background = entry:CreateTexture(nil, "BACKGROUND")
-		background:SetAllPoints()
-		background:SetColorTexture(1, 1, 1, 0.05)
-
-		local border = CreateFrame("Frame", nil, entry, "BackdropTemplate")
-		border:SetAllPoints()
-		border:SetBackdrop({
-			edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
-			edgeSize = 8,
-		})
-		border:SetBackdropBorderColor(0.4, 0.4, 0.5, 0.9)
-
+		-- Header with username, channel, and timestamp (outside the box)
 		local playerName = entry:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-		playerName:SetPoint("TOPLEFT", entry, "TOPLEFT", 8, -8)
+		playerName:SetPoint("TOPLEFT", entry, "TOPLEFT", 0, 0)
 		local shortName = msg.author:match("^([^%-]+)") or msg.author
 		local r, g, b = self:GetClassColor(msg.author)
 		playerName:SetText(shortName)
 		playerName:SetTextColor(r, g, b)
 
 		local timestamp = entry:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-		timestamp:SetPoint("TOPRIGHT", entry, "TOPRIGHT", -8, -8)
+		timestamp:SetPoint("TOPRIGHT", entry, "TOPRIGHT", 0, 0)
 		timestamp:SetText(date("%H:%M", msg.time))
 		timestamp:SetTextColor(0.7, 0.7, 0.7)
+
 		if msg.channel and msg.channel ~= "" then
 			local channelName = self:GetChannelName(msg.channel)
 			if channelName then
@@ -256,9 +259,25 @@ function ServicesBoard:RefreshUI()
 			end
 		end
 
-		local messageText = CreateFrame("SimpleHTML", nil, entry)
-		messageText:SetPoint("TOPLEFT", playerName, "BOTTOMLEFT", 0, -4)
-		messageText:SetPoint("TOPRIGHT", timestamp, "BOTTOMRIGHT", -8, -4)
+		-- Message box (starts below the header)
+		local messageBox = CreateFrame("Frame", nil, entry, "BackdropTemplate")
+		messageBox:SetPoint("TOPLEFT", entry, "TOPLEFT", 0, -18)
+		messageBox:SetPoint("TOPRIGHT", entry, "TOPRIGHT", 0, -18)
+		messageBox:SetBackdrop({
+			bgFile = "Interface\\ChatFrame\\ChatFrameBackground",
+			edgeFile = "Interface\\Buttons\\WHITE8x8",
+			tile = true,
+			tileSize = 16,
+			edgeSize = 1,
+			insets = { left = 1, right = 1, top = 1, bottom = 1 },
+		})
+		messageBox:SetBackdropColor(0.0, 0.0, 0.0, 0.25)
+		messageBox:SetBackdropBorderColor(0.4, 0.4, 0.4, 0.5)
+
+		local messageText = CreateFrame("SimpleHTML", nil, messageBox)
+		messageText:SetFrameLevel(messageBox:GetFrameLevel() + 1)
+		messageText:SetPoint("TOPLEFT", messageBox, "TOPLEFT", 12, -12)
+		messageText:SetPoint("TOPRIGHT", messageBox, "TOPRIGHT", -12, -12)
 		messageText:SetHeight(1)
 
 		local availableWidth = entry:GetWidth() - 16
@@ -280,10 +299,14 @@ function ServicesBoard:RefreshUI()
 		messageText:SetText(self:MakeLinksClickable(msg.text))
 
 		local textHeight = messageText:GetContentHeight()
-		local actualHeight = math.max(entryHeight, 35 + textHeight)
+		local messageBoxHeight = textHeight + 24 -- Add padding for top and bottom (12px each)
+		local actualHeight = 18 + messageBoxHeight + 8 -- Header height + message box + spacing
+
 		entry:SetHeight(actualHeight)
+		messageBox:SetHeight(messageBoxHeight)
 		messageText:SetHeight(textHeight)
-		local highlight = entry:CreateTexture(nil, "HIGHLIGHT")
+
+		local highlight = messageBox:CreateTexture(nil, "HIGHLIGHT")
 		highlight:SetAllPoints()
 		highlight:SetColorTexture(1, 1, 1, 0.1)
 		highlight:Hide()
