@@ -25,7 +25,6 @@ function ServicesBoard:RefreshUI()
 		entry:SetHeight(entryHeight)
 		entry:EnableMouse(true)
 
-		-- Header with username, channel, and timestamp (outside the box)
 		local playerName = entry:CreateFontString(nil, "OVERLAY", "GameFontNormal")
 		playerName:SetPoint("TOPLEFT", entry, "TOPLEFT", 0, 0)
 		local shortName = msg.author:match("^([^%-]+)") or msg.author
@@ -48,30 +47,25 @@ function ServicesBoard:RefreshUI()
 			end
 		end
 
-		-- Modern message box using profession-style background
 		local messageBox = CreateFrame("Frame", nil, entry)
 		messageBox:SetPoint("TOPLEFT", entry, "TOPLEFT", 0, -18)
 		messageBox:SetPoint("TOPRIGHT", entry, "TOPRIGHT", 0, -18)
 
-		-- Create modern background using the same texture as crafting orders rows
 		local bgTexture = messageBox:CreateTexture(nil, "BACKGROUND")
 		if not self:SetTextureAtlas(bgTexture, "Professions-background-summarylist", { 0.1, 0.1, 0.1, 0.8 }) then
-			-- Additional fallback - try auction house background
 			self:SetTextureAtlas(bgTexture, "auctionhouse-background-index", { 0.1, 0.1, 0.1, 0.8 })
 		end
 		bgTexture:SetAllPoints(messageBox)
 		if bgTexture:GetAtlas() then
-			bgTexture:SetVertexColor(0.1, 0.1, 0.1, 0.8) -- Slightly darker than default
+			bgTexture:SetVertexColor(0.1, 0.1, 0.1, 0.8)
 		end
 
-		-- Add subtle border using professions style
 		local borderFrame = CreateFrame("Frame", nil, messageBox, "NineSlicePanelTemplate")
 		borderFrame:SetAllPoints(messageBox)
 		local nineSlice = borderFrame.NineSlice or borderFrame
 		if nineSlice.SetupTextureKit then
 			nineSlice:SetupTextureKit("Professions")
 		else
-			-- Fallback - create a subtle border manually
 			local border = messageBox:CreateTexture(nil, "BORDER")
 			border:SetAllPoints(messageBox)
 			border:SetColorTexture(0.3, 0.3, 0.3, 0.4)
@@ -106,14 +100,13 @@ function ServicesBoard:RefreshUI()
 		messageText:SetText(self:MakeLinksClickable(msg.text))
 
 		local textHeight = messageText:GetContentHeight()
-		local messageBoxHeight = textHeight + 24 -- Add padding for top and bottom (12px each)
-		local actualHeight = 18 + messageBoxHeight + 8 -- Header height + message box + spacing
+		local messageBoxHeight = textHeight + 24
+		local actualHeight = 18 + messageBoxHeight + 8
 
 		entry:SetHeight(actualHeight)
 		messageBox:SetHeight(messageBoxHeight)
 		messageText:SetHeight(textHeight)
 
-		-- Modern highlight texture using the same as Crafting Orders
 		local highlight = messageBox:CreateTexture(nil, "HIGHLIGHT")
 		self:SetTextureAtlas(highlight, "auctionhouse-ui-row-highlight", { 1, 1, 1, 0.15 })
 		highlight:SetAllPoints(messageBox)

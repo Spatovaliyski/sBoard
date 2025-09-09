@@ -55,7 +55,6 @@ function ServicesBoard:GetClassColor(name)
 end
 
 function ServicesBoard:GetChannelName(channelNumber)
-	-- Convert channel number to readable name
 	if not channelNumber or channelNumber == "" then
 		return nil
 	end
@@ -82,12 +81,10 @@ function ServicesBoard:MakeLinksClickable(text)
 	return text
 end
 
--- Utility function to check if modern atlas textures are available
 function ServicesBoard:HasModernTextures()
 	return C_Texture and C_Texture.GetAtlasInfo and type(C_Texture.GetAtlasInfo) == "function"
 end
 
--- Set texture with atlas fallback
 function ServicesBoard:SetTextureAtlas(textureObject, atlasName, fallbackColor)
 	if not textureObject then
 		return false
@@ -97,7 +94,6 @@ function ServicesBoard:SetTextureAtlas(textureObject, atlasName, fallbackColor)
 		textureObject:SetAtlas(atlasName)
 		return true
 	else
-		-- Fallback to solid color or simple texture
 		if fallbackColor then
 			textureObject:SetColorTexture(fallbackColor[1], fallbackColor[2], fallbackColor[3], fallbackColor[4] or 1.0)
 		end
