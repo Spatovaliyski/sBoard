@@ -3,4 +3,9 @@
 ## Notes: Collects and displays chat messages in a tidy list
 ## Author: Limitedby
 ## Version: 1.0
+
+Core.lua
+Frame.lua
+ScrollBox.lua
+UI.lua
 ServicesBoard.lua
